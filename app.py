@@ -8,26 +8,37 @@ import os
 
 DATA_FILE = "lista_espera.csv"
 
+COLUMNAS = [
+    "Carnet",
+    "Nombre",
+    "Telefono",
+    "Hora inicio impresión",
+    "Hora final impresión",
+    "Tiempo de impresión",
+    "Impresora",
+    "Estado"
+]
+
+# ----------------------------------
+# CREAR CSV SI NO EXISTE
+# ----------------------------------
+
+if not os.path.exists(DATA_FILE) or os.stat(DATA_FILE).st_size == 0:
+    df_inicial = pd.DataFrame(columns=COLUMNAS)
+    df_inicial.to_csv(DATA_FILE, index=False)
+
+# ----------------------------------
+# FUNCIONES DE DATOS
+# ----------------------------------
+
 def cargar_datos():
-    if os.path.exists(DATA_FILE):
-        return pd.read_csv(DATA_FILE)
-    else:
-        return pd.DataFrame(columns=[
-            "Carnet",
-            "Nombre",
-            "Telefono",
-            "Hora inicio impresión",
-            "Hora final impresión",
-            "Tiempo de impresión",
-            "Impresora",
-            "Estado"
-        ])
+    return pd.read_csv(DATA_FILE)
 
 def guardar_datos():
     st.session_state.lista_espera.to_csv(DATA_FILE, index=False)
 
 # ----------------------------------
-# INICIALIZAR DATOS EN MEMORIA
+# INICIALIZAR SESSION STATE
 # ----------------------------------
 
 if "lista_espera" not in st.session_state:
