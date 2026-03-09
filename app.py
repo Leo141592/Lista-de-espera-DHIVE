@@ -27,6 +27,7 @@ with tab1:
         "Hora inicio impresión": [],
         "Hora final impresión": [],
         "Tiempo de impresión": [],
+        "Impresora": [],
         "Estado": []
     }
 
@@ -34,13 +35,27 @@ with tab1:
 
     st.dataframe(df, use_container_width=True)
 # ---------------------------
-# TAB 2
+# TAB 2 - IMPRESORAS
 # ---------------------------
 with tab2:
     st.header("Impresoras")
 
-    st.write("Aquí se administrarán las impresoras.")
+    impresoras = [
+        "H2D",
+        "P1S Azul",
+        "P1S Naranja",
+        "P1S Amarilla",
+        "A1 mini"
+    ]
 
+    impresora_seleccionada = st.selectbox(
+        "Selecciona una impresora",
+        impresoras
+    )
+
+    st.subheader(f"Información de la impresora: {impresora_seleccionada}")
+
+    st.write("Aquí podrás mostrar el estado, cola y estadísticas de esta impresora.")
 # ---------------------------
 # TAB 3
 # ---------------------------
