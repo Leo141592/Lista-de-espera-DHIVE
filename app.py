@@ -2,7 +2,9 @@ import streamlit as st
 import pandas as pd
 import os
 from datetime import datetime, timedelta
-
+from streamlit_autorefresh import st_autorefresh
+# refrescar cada segundo
+st_autorefresh(interval=1000, key="contador")
 # ----------------------------------
 # CONFIGURACION ARCHIVO DE DATOS
 # ----------------------------------
@@ -95,92 +97,82 @@ with tab2:
     )
 
     df = st.session_state.lista_espera
+    ahora = datetime.now()
 
     impresiones = df[df["Impresora"] == impresora_seleccionada]
 
-    ahora = datetime.now()
+    st.subheader(f"Estado de {impresora_seleccionada}")
 
     if impresiones.empty:
 
-        st.subheader("Estado: 🟢 Libre")
-        st.write("No hay impresiones registradas.")
+        st.success("Estado: Libre")
+        st.write("Tiempo hasta que termine la impresión: 0")
+        st.write("Hora de finalización: -")
+        st.write("Impresiones en cola: 0")
+        st.write("Tiempo total restante: 0")
+        st.write("Hora hasta disponibilidad: Ahora")
 
     else:
 
-        # convertir horas
         impresiones = impresiones.copy()
-        impresiones["Hora final dt"] = impresiones["Hora final impresión"].apply(
-            lambda x: ahora.replace(
-                hour=int(x.split(":")[0]),
-                minute=int(x.split(":")[1]),
-                second=int(x.split(":")[2])
-            )
-        )
 
-        impresiones = impresiones.sort_values("Hora final dt")
+        impresiones["Hora final impresión"] = pd.to_datetime(
+            impresiones["Hora final impresión"],
+            format="%H:%M:%S"
+        ).apply(lambda x: ahora.replace(
+            hour=x.hour,
+            minute=x.minute,
+            second=x.second
+        ))
 
-        actual = None
-        cola = []
+        impresiones = impresiones.sort_values("Hora final impresión")
 
-        for _, row in impresiones.iterrows():
+        actual = impresiones.iloc[0]
 
-            if row["Hora final dt"] > ahora and actual is None:
-                actual = row
-            elif actual is not None:
-                cola.append(row)
+        tiempo_restante = actual["Hora final impresión"] - ahora
 
-        if actual is None:
+        if tiempo_restante.total_seconds() < 0:
+            tiempo_restante = timedelta(seconds=0)
 
-            st.subheader("Estado: 🟢 Libre")
-            st.write("No hay impresiones en progreso.")
+        horas = tiempo_restante.seconds // 3600
+        minutos = (tiempo_restante.seconds % 3600) // 60
+        segundos = tiempo_restante.seconds % 60
 
-        else:
+        cola = len(impresiones) - 1
 
-            tiempo_restante = actual["Hora final dt"] - ahora
-
-            horas = tiempo_restante.seconds // 3600
-            minutos = (tiempo_restante.seconds % 3600) // 60
-
-            st.subheader("Estado: 🔴 Imprimiendo")
-
-            st.write(f"**Tiempo hasta terminar impresión:** {horas}h {minutos}m")
-
-            st.write(
-                f"**Hora de finalización:** {actual['Hora final dt'].strftime('%H:%M:%S')}"
-            )
-
-        # cola de impresiones
-        st.subheader("Impresiones en cola")
-
-        if len(cola) == 0:
-
-            st.write("No hay impresiones en cola.")
-
-        else:
-
-            cola_df = pd.DataFrame(cola)
-            st.dataframe(
-                cola_df[["Carnet", "Nombre", "Tiempo de impresión"]],
-                use_container_width=True
-            )
-
-        # calcular disponibilidad total
-
-        ultima = impresiones["Hora final dt"].max()
+        ultima = impresiones.iloc[-1]["Hora final impresión"]
 
         tiempo_total = ultima - ahora
+        if tiempo_total.total_seconds() < 0:
+            tiempo_total = timedelta(seconds=0)
 
-        horas_total = tiempo_total.seconds // 3600
-        minutos_total = (tiempo_total.seconds % 3600) // 60
+        h_total = tiempo_total.seconds // 3600
+        m_total = (tiempo_total.seconds % 3600) // 60
+        s_total = tiempo_total.seconds % 60
 
-        st.subheader("Resumen total")
-
-        st.write(f"**Tiempo total restante:** {horas_total}h {minutos_total}m")
+        st.error("Estado: Imprimiendo")
 
         st.write(
-            f"**Hora hasta disponibilidad:** {ultima.strftime('%H:%M:%S')}"
+            f"Tiempo hasta que termine la impresión: "
+            f"{horas}h {minutos}m {segundos}s"
         )
-# ----------------------------------
+
+        st.write(
+            f"Hora de finalización: "
+            f"{actual['Hora final impresión'].strftime('%H:%M:%S')}"
+        )
+
+        st.write(f"Impresiones en cola: {cola}")
+
+        st.write(
+            f"Tiempo total restante: "
+            f"{h_total}h {m_total}m {s_total}s"
+        )
+
+        st.write(
+            f"Hora hasta disponibilidad: "
+            f"{ultima.strftime('%H:%M:%S')}"
+        )# ----------------------------------
 # TAB 3 - IMPRESIONES
 # ----------------------------------
 
