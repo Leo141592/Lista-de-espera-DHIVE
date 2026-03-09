@@ -1,10 +1,10 @@
 import streamlit as st
+import pandas as pd
 
 st.set_page_config(page_title="Sistema de Impresiones", layout="wide")
 
 st.title("Sistema de Gestión de Impresiones")
 
-# Crear pestañas
 tab1, tab2, tab3, tab4 = st.tabs([
     "Lista de espera",
     "Impresoras",
@@ -13,13 +13,26 @@ tab1, tab2, tab3, tab4 = st.tabs([
 ])
 
 # ---------------------------
-# TAB 1
+# TAB 1 - LISTA DE ESPERA
 # ---------------------------
 with tab1:
+
     st.header("Lista de espera")
 
-    st.write("Aquí se mostrarán las impresiones en cola.")
+    # Datos iniciales (ejemplo)
+    data = {
+        "Carnet": [],
+        "Nombre": [],
+        "Telefono": [],
+        "Hora inicio impresión": [],
+        "Hora final impresión": [],
+        "Tiempo de impresión": [],
+        "Estado": []
+    }
 
+    df = pd.DataFrame(data)
+
+    st.dataframe(df, use_container_width=True)
 # ---------------------------
 # TAB 2
 # ---------------------------
