@@ -1,5 +1,41 @@
 import streamlit as st
 import pandas as pd
+import os
+
+# ----------------------------------
+# CONFIGURACION ARCHIVO DE DATOS
+# ----------------------------------
+
+DATA_FILE = "lista_espera.csv"
+
+def cargar_datos():
+    if os.path.exists(DATA_FILE):
+        return pd.read_csv(DATA_FILE)
+    else:
+        return pd.DataFrame(columns=[
+            "Carnet",
+            "Nombre",
+            "Telefono",
+            "Hora inicio impresión",
+            "Hora final impresión",
+            "Tiempo de impresión",
+            "Impresora",
+            "Estado"
+        ])
+
+def guardar_datos():
+    st.session_state.lista_espera.to_csv(DATA_FILE, index=False)
+
+# ----------------------------------
+# INICIALIZAR DATOS EN MEMORIA
+# ----------------------------------
+
+if "lista_espera" not in st.session_state:
+    st.session_state.lista_espera = cargar_datos()
+
+# ----------------------------------
+# CONFIGURACION PAGINA
+# ----------------------------------
 
 st.set_page_config(page_title="Sistema de Impresiones", layout="wide")
 
@@ -12,32 +48,25 @@ tab1, tab2, tab3, tab4 = st.tabs([
     "Personas"
 ])
 
-# ---------------------------
+# ----------------------------------
 # TAB 1 - LISTA DE ESPERA
-# ---------------------------
+# ----------------------------------
+
 with tab1:
 
     st.header("Lista de espera")
 
-    # Datos iniciales (ejemplo)
-    data = {
-        "Carnet": [],
-        "Nombre": [],
-        "Telefono": [],
-        "Hora inicio impresión": [],
-        "Hora final impresión": [],
-        "Tiempo de impresión": [],
-        "Impresora": [],
-        "Estado": []
-    }
+    st.dataframe(
+        st.session_state.lista_espera,
+        use_container_width=True
+    )
 
-    df = pd.DataFrame(data)
-
-    st.dataframe(df, use_container_width=True)
-# ---------------------------
+# ----------------------------------
 # TAB 2 - IMPRESORAS
-# ---------------------------
+# ----------------------------------
+
 with tab2:
+
     st.header("Impresoras")
 
     impresoras = [
@@ -56,18 +85,68 @@ with tab2:
     st.subheader(f"Información de la impresora: {impresora_seleccionada}")
 
     st.write("Aquí podrás mostrar el estado, cola y estadísticas de esta impresora.")
-# ---------------------------
-# TAB 3
-# ---------------------------
+
+# ----------------------------------
+# TAB 3 - IMPRESIONES
+# ----------------------------------
+
 with tab3:
-    st.header("Impresiones")
 
-    st.write("Registro de impresiones realizadas.")
+    st.header("Registrar impresión")
 
-# ---------------------------
-# TAB 4
-# ---------------------------
+    with st.form("form_impresion"):
+
+        carnet = st.text_input("Carnet")
+        nombre = st.text_input("Nombre")
+        telefono = st.text_input("Teléfono")
+
+        hora_inicio = st.time_input("Hora inicio impresión")
+        hora_final = st.time_input("Hora final impresión")
+
+        tiempo = st.number_input(
+            "Tiempo de impresión (minutos)",
+            min_value=0
+        )
+
+        impresora = st.selectbox(
+            "Impresora",
+            ["H2D", "P1S Azul", "P1S Naranja", "P1S Amarilla", "A1 mini"]
+        )
+
+        estado = st.selectbox(
+            "Estado",
+            ["En espera", "Imprimiendo", "Finalizado"]
+        )
+
+        submitted = st.form_submit_button("Guardar impresión")
+
+        if submitted:
+
+            nueva_fila = {
+                "Carnet": carnet,
+                "Nombre": nombre,
+                "Telefono": telefono,
+                "Hora inicio impresión": hora_inicio,
+                "Hora final impresión": hora_final,
+                "Tiempo de impresión": tiempo,
+                "Impresora": impresora,
+                "Estado": estado
+            }
+
+            st.session_state.lista_espera.loc[
+                len(st.session_state.lista_espera)
+            ] = nueva_fila
+
+            guardar_datos()
+
+            st.success("Impresión agregada correctamente")
+
+# ----------------------------------
+# TAB 4 - PERSONAS
+# ----------------------------------
+
 with tab4:
+
     st.header("Personas")
 
     st.write("Gestión de usuarios que utilizan el sistema.")
