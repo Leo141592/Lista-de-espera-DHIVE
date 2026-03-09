@@ -120,22 +120,35 @@ with tab3:
             ["H2D", "P1S Azul", "P1S Naranja", "P1S Amarilla", "A1 mini"]
         )
 
-        estado = st.selectbox(
-            "Estado",
-            ["En espera", "Imprimiendo", "Finalizado"]
-        )
-
         submitted = st.form_submit_button("Guardar impresión")
 
         if submitted:
 
-            # Hora actual del sistema
             hora_inicio = datetime.now()
-
-            # tiempo total = tiempo impresión + buffer logístico
             tiempo_total = tiempo + 5
-
             hora_final = hora_inicio + timedelta(minutes=tiempo_total)
+
+            estado = "Imprimiendo"
+
+            df = st.session_state.lista_espera
+
+            # revisar si la impresora está ocupada
+            impresiones_impresora = df[df["Impresora"] == impresora]
+
+            if not impresiones_impresora.empty:
+
+                ultima_hora = impresiones_impresora["Hora final impresión"].iloc[-1]
+
+                ultima_hora = datetime.strptime(ultima_hora, "%H:%M:%S")
+
+                ultima_hora = hora_inicio.replace(
+                    hour=ultima_hora.hour,
+                    minute=ultima_hora.minute,
+                    second=ultima_hora.second
+                )
+
+                if hora_inicio < ultima_hora:
+                    estado = "En espera"
 
             nueva_fila = {
                 "Carnet": carnet,
@@ -154,7 +167,10 @@ with tab3:
 
             guardar_datos()
 
-            st.success("Impresión agregada correctamente")
+            if estado == "Imprimiendo":
+                st.success("La impresión comenzó inmediatamente")
+            else:
+                st.warning("La impresora está ocupada. La impresión quedó en espera.")
 
 # ----------------------------------
 # TAB 4 - PERSONAS
