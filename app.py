@@ -1,6 +1,7 @@
 import streamlit as st
 import pandas as pd
 import os
+from datetime import datetime, timedelta
 
 # ----------------------------------
 # CONFIGURACION ARCHIVO DE DATOS
@@ -28,7 +29,7 @@ if not os.path.exists(DATA_FILE) or os.stat(DATA_FILE).st_size == 0:
     df_inicial.to_csv(DATA_FILE, index=False)
 
 # ----------------------------------
-# FUNCIONES DE DATOS
+# FUNCIONES
 # ----------------------------------
 
 def cargar_datos():
@@ -95,8 +96,6 @@ with tab2:
 
     st.subheader(f"Información de la impresora: {impresora_seleccionada}")
 
-    st.write("Aquí podrás mostrar el estado, cola y estadísticas de esta impresora.")
-
 # ----------------------------------
 # TAB 3 - IMPRESIONES
 # ----------------------------------
@@ -111,12 +110,9 @@ with tab3:
         nombre = st.text_input("Nombre")
         telefono = st.text_input("Teléfono")
 
-        hora_inicio = st.time_input("Hora inicio impresión")
-        hora_final = st.time_input("Hora final impresión")
-
         tiempo = st.number_input(
             "Tiempo de impresión (minutos)",
-            min_value=0
+            min_value=1
         )
 
         impresora = st.selectbox(
@@ -133,12 +129,20 @@ with tab3:
 
         if submitted:
 
+            # Hora actual del sistema
+            hora_inicio = datetime.now()
+
+            # tiempo total = tiempo impresión + buffer logístico
+            tiempo_total = tiempo + 5
+
+            hora_final = hora_inicio + timedelta(minutes=tiempo_total)
+
             nueva_fila = {
                 "Carnet": carnet,
                 "Nombre": nombre,
                 "Telefono": telefono,
-                "Hora inicio impresión": hora_inicio,
-                "Hora final impresión": hora_final,
+                "Hora inicio impresión": hora_inicio.strftime("%H:%M:%S"),
+                "Hora final impresión": hora_final.strftime("%H:%M:%S"),
                 "Tiempo de impresión": tiempo,
                 "Impresora": impresora,
                 "Estado": estado
