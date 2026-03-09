@@ -114,7 +114,6 @@ with tab2:
 
     else:
 
-        # convertir hora inicio
         impresiones["Hora inicio impresión"] = pd.to_datetime(
             impresiones["Hora inicio impresión"],
             format="%H:%M:%S"
@@ -127,41 +126,49 @@ with tab2:
         impresiones = impresiones.sort_values("Hora inicio impresión")
 
         tiempo_cursor = ahora
-        tiempos_finales = []
+        tiempos_inicio = []
+        tiempos_final = []
 
         for _, fila in impresiones.iterrows():
 
             duracion = int(fila["Tiempo de impresión"]) + 5
+
             inicio_real = max(tiempo_cursor, fila["Hora inicio impresión"])
             fin_real = inicio_real + timedelta(minutes=duracion)
 
-            tiempos_finales.append(fin_real)
+            tiempos_inicio.append(inicio_real)
+            tiempos_final.append(fin_real)
 
             tiempo_cursor = fin_real
 
-        impresiones["Fin real"] = tiempos_finales
+        impresiones["Inicio real"] = tiempos_inicio
+        impresiones["Fin real"] = tiempos_final
 
-        actual_fin = tiempos_finales[0]
+        actual_fin = tiempos_final[0]
 
         tiempo_restante = actual_fin - ahora
         if tiempo_restante.total_seconds() < 0:
             tiempo_restante = timedelta(seconds=0)
 
-        horas = tiempo_restante.seconds // 3600
-        minutos = (tiempo_restante.seconds % 3600) // 60
-        segundos = tiempo_restante.seconds % 60
+        seg = int(tiempo_restante.total_seconds())
+
+        horas = seg // 3600
+        minutos = (seg % 3600) // 60
+        segundos = seg % 60
 
         cola = len(impresiones) - 1
 
-        ultima = tiempos_finales[-1]
+        ultima = tiempos_final[-1]
 
         tiempo_total = ultima - ahora
         if tiempo_total.total_seconds() < 0:
             tiempo_total = timedelta(seconds=0)
 
-        h_total = tiempo_total.seconds // 3600
-        m_total = (tiempo_total.seconds % 3600) // 60
-        s_total = tiempo_total.seconds % 60
+        seg_total = int(tiempo_total.total_seconds())
+
+        h_total = seg_total // 3600
+        m_total = (seg_total % 3600) // 60
+        s_total = seg_total % 60
 
         st.error("Estado: Imprimiendo")
 
@@ -280,11 +287,13 @@ with tab4:
         "A1 mini"
     ]
 
+    ahora = datetime.now()
+
     for impresora in impresoras:
 
         st.subheader(impresora)
 
-        cola = df[df["Impresora"] == impresora]
+        cola = df[df["Impresora"] == impresora].copy()
 
         if cola.empty:
 
@@ -292,17 +301,32 @@ with tab4:
 
         else:
 
-            cola = cola.copy()
-
             cola["Hora inicio impresión"] = pd.to_datetime(
                 cola["Hora inicio impresión"],
                 format="%H:%M:%S"
-            )
+            ).apply(lambda x: ahora.replace(
+                hour=x.hour,
+                minute=x.minute,
+                second=x.second
+            ))
 
             cola = cola.sort_values("Hora inicio impresión")
 
+            tiempo_cursor = ahora
+
             for i, fila in enumerate(cola.itertuples(), start=1):
 
-                st.write(f"{i}. {fila.Nombre}")
+                duracion = int(fila._6) + 5  # tiempo impresión
+
+                inicio_real = max(tiempo_cursor, fila._4)
+                fin_real = inicio_real + timedelta(minutes=duracion)
+
+                st.write(
+                    f"{i}. {fila.Nombre} | "
+                    f"Inicio: {inicio_real.strftime('%H:%M:%S')} | "
+                    f"Salida: {fin_real.strftime('%H:%M:%S')}"
+                )
+
+                tiempo_cursor = fin_real
 
         st.divider()
