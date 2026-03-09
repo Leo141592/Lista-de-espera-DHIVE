@@ -254,6 +254,64 @@ with tab3:
 
 with tab4:
 
-    st.header("Personas")
+    st.header("Avisos de personas")
 
-    st.write("Gestión de usuarios que utilizan el sistema.")
+    df = st.session_state.lista_espera.copy()
+    ahora = datetime.now()
+
+    if df.empty:
+        st.info("No hay personas en el sistema.")
+    else:
+
+        for i, fila in df.iterrows():
+
+            hora_inicio = datetime.strptime(
+                fila["Hora inicio impresión"],
+                "%H:%M:%S"
+            )
+
+            hora_inicio = ahora.replace(
+                hour=hora_inicio.hour,
+                minute=hora_inicio.minute,
+                second=hora_inicio.second
+            )
+
+            diferencia = (hora_inicio - ahora).total_seconds()
+
+            st.subheader(fila["Nombre"])
+
+            st.write("Carnet:", fila["Carnet"])
+            st.write("Impresora:", fila["Impresora"])
+            st.write("Hora de impresión:", fila["Hora inicio impresión"])
+
+            # --------------------
+            # AVISOS
+            # --------------------
+
+            if 0 < diferencia <= 300:
+                st.warning("Faltan menos de 5 minutos para tu impresión")
+
+            elif -60 <= diferencia <= 0:
+                st.success("Ya es tu turno para usar la impresora")
+
+            elif -300 <= diferencia < -60:
+                st.error("La persona se está retrasando")
+
+            elif diferencia < -300:
+                st.error("Pasaron más de 5 minutos y la persona no llegó")
+
+            # --------------------
+            # BOTON LLEGADA
+            # --------------------
+
+            if st.button(
+                f"Persona llegó - iniciar impresión {i}"
+            ):
+
+                st.session_state.lista_espera.at[i, "Estado"] = "Imprimiendo"
+
+                guardar_datos()
+
+                st.success("La impresión fue iniciada")
+
+            st.divider()
