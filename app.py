@@ -114,37 +114,35 @@ with tab2:
 
     else:
 
+        # convertir horas
         impresiones["Hora inicio impresión"] = pd.to_datetime(
             impresiones["Hora inicio impresión"],
             format="%H:%M:%S"
-        ).apply(lambda x: ahora.replace(
-            hour=x.hour,
-            minute=x.minute,
-            second=x.second
-        ))
+        )
 
         impresiones = impresiones.sort_values("Hora inicio impresión")
 
-        tiempo_cursor = ahora
         tiempos_inicio = []
-        tiempos_final = []
+        tiempos_fin = []
 
-        for _, fila in impresiones.iterrows():
+        for i, fila in impresiones.iterrows():
 
             duracion = int(fila["Tiempo de impresión"]) + 5
 
-            inicio_real = max(tiempo_cursor, fila["Hora inicio impresión"])
+            if len(tiempos_fin) == 0:
+                inicio_real = fila["Hora inicio impresión"]
+            else:
+                inicio_real = tiempos_fin[-1]
+
             fin_real = inicio_real + timedelta(minutes=duracion)
 
             tiempos_inicio.append(inicio_real)
-            tiempos_final.append(fin_real)
-
-            tiempo_cursor = fin_real
+            tiempos_fin.append(fin_real)
 
         impresiones["Inicio real"] = tiempos_inicio
-        impresiones["Fin real"] = tiempos_final
+        impresiones["Fin real"] = tiempos_fin
 
-        actual_fin = tiempos_final[0]
+        actual_fin = tiempos_fin[0]
 
         tiempo_restante = actual_fin - ahora
         if tiempo_restante.total_seconds() < 0:
@@ -158,7 +156,7 @@ with tab2:
 
         cola = len(impresiones) - 1
 
-        ultima = tiempos_final[-1]
+        ultima = tiempos_fin[-1]
 
         tiempo_total = ultima - ahora
         if tiempo_total.total_seconds() < 0:
