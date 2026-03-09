@@ -94,8 +94,92 @@ with tab2:
         impresoras
     )
 
-    st.subheader(f"Información de la impresora: {impresora_seleccionada}")
+    df = st.session_state.lista_espera
 
+    impresiones = df[df["Impresora"] == impresora_seleccionada]
+
+    ahora = datetime.now()
+
+    if impresiones.empty:
+
+        st.subheader("Estado: 🟢 Libre")
+        st.write("No hay impresiones registradas.")
+
+    else:
+
+        # convertir horas
+        impresiones = impresiones.copy()
+        impresiones["Hora final dt"] = impresiones["Hora final impresión"].apply(
+            lambda x: ahora.replace(
+                hour=int(x.split(":")[0]),
+                minute=int(x.split(":")[1]),
+                second=int(x.split(":")[2])
+            )
+        )
+
+        impresiones = impresiones.sort_values("Hora final dt")
+
+        actual = None
+        cola = []
+
+        for _, row in impresiones.iterrows():
+
+            if row["Hora final dt"] > ahora and actual is None:
+                actual = row
+            elif actual is not None:
+                cola.append(row)
+
+        if actual is None:
+
+            st.subheader("Estado: 🟢 Libre")
+            st.write("No hay impresiones en progreso.")
+
+        else:
+
+            tiempo_restante = actual["Hora final dt"] - ahora
+
+            horas = tiempo_restante.seconds // 3600
+            minutos = (tiempo_restante.seconds % 3600) // 60
+
+            st.subheader("Estado: 🔴 Imprimiendo")
+
+            st.write(f"**Tiempo hasta terminar impresión:** {horas}h {minutos}m")
+
+            st.write(
+                f"**Hora de finalización:** {actual['Hora final dt'].strftime('%H:%M:%S')}"
+            )
+
+        # cola de impresiones
+        st.subheader("Impresiones en cola")
+
+        if len(cola) == 0:
+
+            st.write("No hay impresiones en cola.")
+
+        else:
+
+            cola_df = pd.DataFrame(cola)
+            st.dataframe(
+                cola_df[["Carnet", "Nombre", "Tiempo de impresión"]],
+                use_container_width=True
+            )
+
+        # calcular disponibilidad total
+
+        ultima = impresiones["Hora final dt"].max()
+
+        tiempo_total = ultima - ahora
+
+        horas_total = tiempo_total.seconds // 3600
+        minutos_total = (tiempo_total.seconds % 3600) // 60
+
+        st.subheader("Resumen total")
+
+        st.write(f"**Tiempo total restante:** {horas_total}h {minutos_total}m")
+
+        st.write(
+            f"**Hora hasta disponibilidad:** {ultima.strftime('%H:%M:%S')}"
+        )
 # ----------------------------------
 # TAB 3 - IMPRESIONES
 # ----------------------------------
